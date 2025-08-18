@@ -8,6 +8,7 @@ import os
 ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
 sys.path.append(ROOT_DIR)
 os.chdir(ROOT_DIR)
+PYTHON_EXE_PATH = ".venv/bin/python"
 
 # %%
 import pathlib
@@ -38,7 +39,7 @@ def main(session_dir):
         assert csv_path.is_file()
         
         cmd = [
-            'python', str(script_path),
+            PYTHON_EXE_PATH, str(script_path),
             '--tag_detection', str(tag_path),
             '--csv_trajectory', str(csv_path),
             '--output', str(slam_tag_path),
@@ -55,7 +56,7 @@ def main(session_dir):
             tag_path = gripper_dir.joinpath('tag_detection.pkl')
             assert tag_path.is_file()
             cmd = [
-                'python', str(script_path),
+                PYTHON_EXE_PATH, str(script_path),
                 '--input', str(tag_path),
                 '--output', str(gripper_range_path)
             ]

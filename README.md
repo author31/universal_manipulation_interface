@@ -1,3 +1,42 @@
+# THIS fork uses 'uv' as package manager instead of conda, switch to use py-gpmf-parser to extract GoPro IMU data, Tested on GoPro 13, The following are quick commands to run the pipeline
+
+All commands are wrapped in a `Makefile` for convenience.
+
+### Setup
+
+```bash
+# Install uv if not already installed
+make install-uv
+
+# Create a Python 3.9 virtual environment in .venv/
+make venv
+
+# Install project dependencies from requirements.txt
+make deps
+```
+
+### Running Pipelines
+
+Some commands require you to provide a `dirname` (the dataset directory).
+
+```bash
+# Run the preprocessing pipeline
+make run-preprocess dirname=/path/to/data
+
+# Generate a Zarr dataset from the pipeline output
+make run-generate-zarr-dataset dirname=/path/to/data
+```
+
+### Notes
+
+* The virtual environment is created in `.venv/` by default.
+* You can change the environment directory by overriding `VENV_NAME`:
+
+```bash
+make venv VENV_NAME=.myenv
+```
+
+
 # Universal Manipulation Interface
 
 [[Project page]](https://umi-gripper.github.io/)

@@ -12,33 +12,63 @@ os.chdir(ROOT_DIR)
 # %%
 import pathlib
 import click
-import subprocess
 import multiprocessing
 import concurrent.futures
+import json
 from tqdm import tqdm
+from py_gpmf_parser.gopro_telemetry_extractor import GoProTelemetryExtractor
+
+SECS_TO_MS = 1e3
+def convert_to_gopro_telemetry(payload: tuple, skip_seconds=0.):
+    return {
+        "samples": [{"value": data.tolist(), "cts": (ts*SECS_TO_MS).tolist()} for data, ts in zip(*payload)]
+    }
+
+def extract_imu_from_video(video_dir):
+    """Extract IMU data from a single video directory using py_gpmf_parser."""
+    video_dir = pathlib.Path(video_dir).absolute()
+    video_path = video_dir / 'raw_video.mp4'
+    output_path = video_dir / 'imu_data.json'
+    
+    if not video_path.exists():
+        raise FileNotFoundError(f"raw_video.mp4 not found in {video_dir}")
+    
+    streams = ["ACCL", "GYRO", "GPS5", "GPSP", "GPSU", "GPSF", "GRAV", "MAGN", "CORI", "IORI", "TMPC"]
+    
+    extractor = GoProTelemetryExtractor(str(video_path))
+    try:
+        extractor.open_source()
+        
+        output = {
+            "1": {
+                "streams": {},
+            },
+            "frames/second": 0.0
+        }
+        
+        for stream in streams:
+            payload = extractor.extract_data(stream)
+            if payload and len(payload[0]) > 0:
+                data = convert_to_gopro_telemetry(payload)
+                output["1"]["streams"][stream] = data
+        
+        with open(output_path, 'w') as f:
+            json.dump(output, f, indent=2)
+            
+        return True
+    except Exception as e:
+        print(f"Error processing {video_dir}: {str(e)}")
+        return False
+    finally:
+        extractor.close_source()
 
 # %%
 @click.command()
-@click.option('-d', '--docker_image', default="chicheng/openicc:latest")
 @click.option('-n', '--num_workers', type=int, default=None)
-@click.option('-np', '--no_docker_pull', is_flag=True, default=False, help="pull docker image from docker hub")
 @click.argument('session_dir', nargs=-1)
-def main(docker_image, num_workers, no_docker_pull, session_dir):
+def main(num_workers, session_dir):
     if num_workers is None:
         num_workers = multiprocessing.cpu_count()
-
-    # pull docker
-    if not no_docker_pull:
-        print(f"Pulling docker image {docker_image}")
-        cmd = [
-            'docker',
-            'pull',
-            docker_image
-        ]
-        p = subprocess.run(cmd)
-        if p.returncode != 0:
-            print("Docker pull failed!")
-            exit(1)
 
     for session in session_dir:
         input_dir = pathlib.Path(os.path.expanduser(session)).joinpath('demos')
@@ -46,54 +76,29 @@ def main(docker_image, num_workers, no_docker_pull, session_dir):
         print(f'Found {len(input_video_dirs)} video dirs')
 
         with tqdm(total=len(input_video_dirs)) as pbar:
-            # one chunk per thread, therefore no synchronization needed
             with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
                 futures = set()
-                for video_dir in tqdm(input_video_dirs):
+                for video_dir in input_video_dirs:
                     video_dir = video_dir.absolute()
                     if video_dir.joinpath('imu_data.json').is_file():
                         print(f"imu_data.json already exists, skipping {video_dir.name}")
+                        pbar.update(1)
                         continue
-                    mount_target = pathlib.Path('/data')
-
-                    video_path = mount_target.joinpath('raw_video.mp4')
-                    json_path = mount_target.joinpath('imu_data.json')
-
-                    # run imu extractor
-                    cmd = [
-                        'docker',
-                        'run',
-                        '--rm', # delete after finish
-                        '--volume', str(video_dir) + ':' + '/data',
-                        docker_image,
-                        'node',
-                        '/OpenImuCameraCalibrator/javascript/extract_metadata_single.js',
-                        str(video_path),
-                        str(json_path)
-                    ]
-
-                    stdout_path = video_dir.joinpath('extract_gopro_imu_stdout.txt')
-                    stderr_path = video_dir.joinpath('extract_gopro_imu_stderr.txt')
 
                     if len(futures) >= num_workers:
-                        # limit number of inflight tasks
                         completed, futures = concurrent.futures.wait(futures, 
                             return_when=concurrent.futures.FIRST_COMPLETED)
                         pbar.update(len(completed))
 
-                    futures.add(executor.submit(
-                        lambda x, stdo, stde: subprocess.run(x, 
-                            cwd=str(video_dir),
-                            stdout=stdo.open('w'),
-                            stderr=stde.open('w')), 
-                        cmd, stdout_path, stderr_path))
-                    # print(' '.join(cmd))
+                    futures.add(executor.submit(extract_imu_from_video, video_dir))
 
                 completed, futures = concurrent.futures.wait(futures)
                 pbar.update(len(completed))
 
-        print("Done! Result:")
-        print([x.result() for x in completed])
+        results = [x.result() for x in completed]
+        successful = sum(results)
+        total = len(results)
+        print(f"Done! Successfully processed {successful}/{total} videos")
 
 # %%
 if __name__ == "__main__":
