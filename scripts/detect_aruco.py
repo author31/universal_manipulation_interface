@@ -57,20 +57,23 @@ def main(input, output, intrinsics_json, aruco_yaml, num_workers):
             frame_cts_sec = frame.pts * in_stream.time_base
             # avoid detecting tags in the mirror
             img = draw_predefined_mask(img, color=(0,0,0), mirror=True, gripper=False, finger=False)
-            tag_dict = detect_localize_aruco_tags(
-                img=img,
-                aruco_dict=aruco_dict,
-                marker_size_map=marker_size_map,
-                fisheye_intr_dict=fisheye_intr,
-                refine_subpix=True
-            )
-            result = {
-                'frame_idx': i,
-                'time': float(frame_cts_sec),
-                'tag_dict': tag_dict
-            }
-            results.append(result)
-    
+            try:
+                tag_dict = detect_localize_aruco_tags(
+                    img=img,
+                    aruco_dict=aruco_dict,
+                    marker_size_map=marker_size_map,
+                    fisheye_intr_dict=fisheye_intr,
+                    refine_subpix=True
+                )
+                result = {
+                    'frame_idx': i,
+                    'time': float(frame_cts_sec),
+                    'tag_dict': tag_dict
+                }
+                results.append(result)
+            except Exception as e:
+                print(f"[WARN] Exception arised: {e}, skipping.")
+                continue
     # dump
     pickle.dump(results, open(os.path.expanduser(output), 'wb'))
 

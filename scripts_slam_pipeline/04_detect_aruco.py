@@ -12,6 +12,8 @@ ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
 sys.path.append(ROOT_DIR)
 os.chdir(ROOT_DIR)
 
+PYTHON_EXE_PATH = ".venv/bin/python"
+
 # %%
 import pathlib
 import click
@@ -53,7 +55,7 @@ def main(input_dir, camera_intrinsics, aruco_yaml, num_workers):
 
                 # run SLAM
                 cmd = [
-                    'python', script_path,
+                    PYTHON_EXE_PATH, str(script_path),
                     '--input', str(video_path),
                     '--output', str(pkl_path),
                     '--intrinsics_json', camera_intrinsics,
