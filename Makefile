@@ -62,3 +62,8 @@ run-preprocess: venv
 run-generate-zarr-dataset: venv
 	@if [ -z "$(dirname)" ]; then echo "Error: dirname is required"; exit 1; fi
 	$(PYTHON) scripts_slam_pipeline/07_generate_replay_buffer.py -o $(patsubst %/,%,$(dirname))/dataset.zarr.zip $(patsubst %/,%,$(dirname))
+
+
+.PHONY: run-visualize
+run-visualize: 
+	$(PYTHON) diffusion_policy/env/franka_assembly/visualize.py
