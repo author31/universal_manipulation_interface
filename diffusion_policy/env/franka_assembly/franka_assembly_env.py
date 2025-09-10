@@ -55,16 +55,6 @@ class FrankaAssemblyEnv(gym.Env):
         # Load the robot
         self.robot = Franka(client_id=self.client_id)
 
-        # # Load dynamic object (e.g., a cube to be assembled)
-        # obj_path = os.path.join(os.path.dirname(__file__), '..', 'assets', 'objects', 'cube.urdf')
-        # self.initial_obj_pos = [0.5, 0.1, 0.7]
-        # self.obj_id = p.loadURDF(obj_path, self.initial_obj_pos, physicsClientId=self.client_id)
-        
-        # Load target socket
-        # socket_path = os.path.join(os.path.dirname(__file__), '..', 'assets', 'objects', 'socket.urdf')
-        # self.socket_pos = [0.5, -0.2, 0.65]
-        # p.loadURDF(socket_path, self.socket_pos, useFixedBase=True, physicsClientId=self.client_id)
-
     def reset(self, seed=None, options=None):
         """Resets the environment to an initial state."""
         super().reset(seed=seed)

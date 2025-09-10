@@ -205,3 +205,6 @@ hydra:
   sweep:
     dir: data/outputs/${now:%Y.%m.%d}/${now:%H.%M.%S}_${name}_${task_name}
     subdir: ${hydra.job.num}
+
+env_runner:
+  _target_: diffusion_policy.env_runner.franka_assembly_image_runner.FrankaAssemblyImageRunner
