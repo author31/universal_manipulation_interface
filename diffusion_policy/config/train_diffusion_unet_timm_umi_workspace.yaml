@@ -11,6 +11,9 @@ exp_name: "default"
 
 n_action_steps: 8
 
+env_runner:
+  _target_: diffusion_policy.env_runner.franka_assembly_image_runner.FrankaAssemblyImageRunner
+
 policy:
   _target_: diffusion_policy.policy.diffusion_unet_timm_policy.DiffusionUnetTimmPolicy
 
@@ -206,5 +209,3 @@ hydra:
     dir: data/outputs/${now:%Y.%m.%d}/${now:%H.%M.%S}_${name}_${task_name}
     subdir: ${hydra.job.num}
 
-env_runner:
-  _target_: diffusion_policy.env_runner.franka_assembly_image_runner.FrankaAssemblyImageRunner

@@ -86,7 +86,7 @@ class FrankaAssemblyEnv(gym.Env):
     def _get_obs(self):
         """Returns the current observation."""
         robot_state = self.robot.get_state()
-        img = self.render_gopro(width=self.render_size, width=self.render_size).astype(np.float32)
+        img = self.render_gopro(width=self.render_size, height=self.render_size).astype(np.float32)
         img_obs = np.moveaxis(img/255, -1, 0)
         
         return {
