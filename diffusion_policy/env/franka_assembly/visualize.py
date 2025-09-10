@@ -20,7 +20,6 @@ Controls:
 """
 
 import pybullet as p
-import pybullet_data
 import numpy as np
 import time
 import sys
@@ -324,6 +323,7 @@ class FrankaVisualizer:
         
         try:
             while self.running:
+                self.env.unwrapped.render_gopro(width=1280, height=800)
                 # Handle input
                 self.handle_keyboard_input()
                 

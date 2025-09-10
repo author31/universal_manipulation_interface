@@ -15,9 +15,10 @@ class FrankaAssemblyEnv(gym.Env):
     """
     metadata = {'render_modes': ['human', 'rgb_array'], 'render_fps': 240}
 
-    def __init__(self, render_mode='human'):
+    def __init__(self, render_mode='human', render_size=224):
         super().__init__()
         self.render_mode = render_mode
+        self.render_size = render_size
         
         # Initialize PyBullet physics client
         if self.render_mode == 'human':
@@ -33,12 +34,13 @@ class FrankaAssemblyEnv(gym.Env):
         )
 
         # Define action and observation spaces
-        # Action: 7 for arm joint positions, 1 for gripper (0=close, 1=open)
-        self.action_space = spaces.Box(low=-1, high=1, shape=(8,), dtype=np.float32)
+        # Action: 6 for arm joint positions, 1 for gripper
+        self.action_space = spaces.Box(low=-1, high=1, shape=(7,), dtype=np.float32)
 
         # Observation: Dictionary with robot and object states
         self.observation_space = spaces.Dict({
-            "robot_hand_pos": spaces.Box(low=-2, high=2, shape=(3,), dtype=np.float32),
+            "image": spaces.Box(low=0, high=1, shape=(3,self.render_size, self.render_size), dtype=np.float32),
+            "hand_pos": spaces.Box(low=-2, high=2, shape=(3,), dtype=np.float32),
         })
         self._load_scene()
 
@@ -84,9 +86,12 @@ class FrankaAssemblyEnv(gym.Env):
     def _get_obs(self):
         """Returns the current observation."""
         robot_state = self.robot.get_state()
+        img = self.render_gopro(width=self.render_size, width=self.render_size).astype(np.float32)
+        img_obs = np.moveaxis(img/255, -1, 0)
         
         return {
-            "robot_hand_pos": robot_state['hand_pos'],
+            "image": img_obs,
+            "hand_pos": robot_state['hand_pos'],
         }
 
     def _compute_reward(self, obs):
@@ -105,7 +110,7 @@ class FrankaAssemblyEnv(gym.Env):
                 fov=60, aspect=1.0, nearVal=0.1, farVal=100.0)
             
             (_, _, rgba_px, _, _) = p.getCameraImage(
-                width=224, height=224, viewMatrix=view_matrix,
+                width=self.render_size, height=self.render_size, viewMatrix=view_matrix,
                 projectionMatrix=proj_matrix, renderer=p.ER_BULLET_HARDWARE_OPENGL)
             
             rgb_array = np.array(rgba_px, dtype=np.uint8)
